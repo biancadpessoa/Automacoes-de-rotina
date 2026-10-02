@@ -13,5 +13,6 @@ Resumo:
   2. Clique com o botão direito em setup.ps1 > "Executar com o PowerShell"
   3. Configure o script da agenda (agenda_export.gs) em script.google.com
   4. Ajuste categorias e agendas "sempre presente" no config.json
+  5. (Opcional) Lançamento automático no Clockwork: rode setup_clockwork.ps1 - veja "CLOCKWORK - LEIA-ME.txt"
 
 Nada sai do seu computador/Drive: os dados ficam no seu PC (tracker.db) e no seu Google Drive.

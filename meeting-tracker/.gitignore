@@ -5,3 +5,4 @@ clockwork_lancamentos.csv
 dashboard.html
 *.xlsx
 __pycache__/
+clockwork_erros.log

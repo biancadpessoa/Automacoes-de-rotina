@@ -2,6 +2,7 @@
 
     python tracker.py        -> sincroniza dados e gera dashboard.html
     python tracker.py mic    -> registra a sessão atual de microfone (rodar a cada minuto)
+    python tracker.py clockwork [--simular|token] -> lança as horas no Clockwork (ver clockwork.py)
 """
 import json
 import os
@@ -126,7 +127,8 @@ def ensure_drive(timeout=90):
     return False
 
 
-def run():
+def run(clockwork_mode="auto"):
+    """clockwork_mode: 'auto' (execução de segunda), 'lancar', 'simular' ou None (não mexe no Jira)."""
     cfg = load_config()
     ensure_drive()
     con = db()
@@ -222,7 +224,25 @@ def run():
         f.write(html)
     export_sheet(data, cfg)
     make_reports(data, cfg, now)
+    if clockwork_mode:
+        sync_clockwork(data, cfg, clockwork_mode)
     return out
+
+
+def sync_clockwork(data, cfg, mode):
+    """Erro no Jira (sem rede, token vencido) não pode derrubar o dashboard nem os relatórios."""
+    import clockwork
+    if mode == "auto" and not os.path.exists(clockwork.CONFIG):
+        return  # automação ainda não configurada
+    try:
+        clockwork.sync(json.loads(json.dumps(data)), cfg["email"], simulate=mode == "simular")
+    except Exception as e:
+        msg = f"{datetime.now():%Y-%m-%d %H:%M} Clockwork: {e}"
+        print(msg)
+        with open(os.path.join(HERE, "clockwork_erros.log"), "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+        if mode != "auto":
+            raise SystemExit(1)
 
 
 def drive_dir():
@@ -287,7 +307,13 @@ if __name__ == "__main__":
         day = date.fromisoformat(sys.argv[3]) if len(sys.argv) > 3 else date.today()
         a, b = (report.week_bounds if kind == "semanal" else report.month_bounds)(day)
         run.__globals__["make_reports"] = lambda data, cfg, now: make_reports(data, cfg, now, force=[(kind, a, b)])
-        run()
+        run(clockwork_mode=None)
+    elif sys.argv[1:2] == ["clockwork"]:
+        if sys.argv[2:] == ["token"]:
+            import clockwork
+            clockwork.save_token(clockwork.load_config().get("email") or load_config()["email"])
+        else:
+            run(clockwork_mode="simular" if "--simular" in sys.argv else "lancar")
     else:
         path = run()
         print("Dashboard:", path)

@@ -62,4 +62,5 @@ if (-not $SemExecutar) {
     & python (Join-Path $dir "tracker.py") --open
 }
 Write-Host "`nPronto! Próximo passo: configurar a exportação da agenda (Apps Script) - veja o guia." -ForegroundColor Green
+Write-Host "Para lançar as horas no Clockwork automaticamente: rode o setup_clockwork.ps1 (botão direito > Executar com o PowerShell)."
 Pop-Location

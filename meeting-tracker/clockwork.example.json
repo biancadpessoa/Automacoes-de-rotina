@@ -1,0 +1,43 @@
+{
+  "ativo": true,
+  "site": "https://madeiramadeira.atlassian.net",
+  "email": "",
+  "horas_dia": 8,
+  "fracao_minutos": 15,
+  "minimo_minutos": 30,
+  "pular_dias_sem_reuniao": true,
+  "inicio_do_dia": "09:00",
+  "lancar_a_partir_de": "2026-09-11",
+  "_ajuda": "Toda segunda o tracker lança no Jira (Clockwork) os dias úteis pendentes até ontem, a partir de lancar_a_partir_de. Dias que já têm qualquer lançamento seu são pulados. Teste antes com: python tracker.py clockwork --simular",
+
+  "rotinas": {
+    "issue": "PLATSERV-5270",
+    "regras": ["daily", "weekly", "semanal", "wbr", "mbr", "qbr", "planning", "review", "retro", "refinamento",
+               "fórum", "forum", "all hands", "pre-read", "sumário executivo", "checkpoint",
+               "<>", "1:1", "1on1", "^[\\wÀ-ú]+ ?[/e] ?[\\wÀ-ú]+$", "alinhamentos? dai", "atualizações dai",
+               "treinamento", "workshop", "onboarding", "oficina", "immpulso", "jantar", "almoço patrocinado",
+               "claude", "cláudio", "claudinho"]
+  },
+  "_rotinas_ajuda": "Cerimônias, weeklies, 1:1s e treinamentos: vão para a iniciativa de rotinas pelo tempo real da reunião.",
+
+  "iniciativas": [
+    {"issue": "PLATSERV-5274", "nome": "Autoatendimento pós-venda (Bot CX WhatsApp / Mercado Livre)",
+     "regras": ["bot", "testes? whats", "cancelamento", "autoatendimento", "atraso da entrega", "zendesk",
+                "sem pro", "finalização de serviços", "massa de teste"]},
+    {"issue": "PLATSERV-5275", "nome": "Serviços em marketplaces (Shopee / Mercado Livre / Installation Services)",
+     "regras": ["shopee", "meli", "mercado livre", "installation services", "conciliação", "sellers 3p"]},
+    {"issue": "PLATSERV-4062", "nome": "Extinguir a plataforma da venda legada",
+     "regras": ["venda legada", "vendas legadas", "desconto progressivo", "vtex", "guides", "bundle", "casatema",
+                "pacote de serviços", "serviço adicional", "poc curitiba", "link de pagamento", "fluxos de venda"]},
+    {"issue": "PLATSERV-1731", "nome": "Agente de preço fixo / agente de vendas",
+     "regras": ["agente? de vendas", "preço fixo", "mumu", "proposta de valor", "proposta serviços", "agent rcs",
+                "cadastro de cartão"]},
+    {"issue": "PLATSERV-4063", "nome": "Pesquisas com usuário para definir próximos passos", "peso_fixo": 0.3,
+     "regras": ["pesquisa", "entrevista", "usuári", "voz do cliente", "\\bces\\b", "\\bnps\\b", "reclama",
+                "discovery"]}
+  ],
+  "_iniciativas_ajuda": "peso_fixo = fração do tempo de foco que a iniciativa recebe toda semana, mesmo sem reunião (0.3 = 30%). Cada reunião vai para a 1ª iniciativa cujo termo aparece no título (minúsculas; aceita regex). O tema vence o ritual: 'Refinamento - Fluxo X' vai para a iniciativa de X. Reunião sem tema não pesa na divisão.",
+
+  "sem_tema": "PLATSERV-5270",
+  "_sem_tema_ajuda": "Issue usada quando a semana inteira não tem nenhuma reunião de iniciativa."
+}

@@ -1,0 +1,45 @@
+﻿CLOCKWORK AUTOMÁTICO (lançamento de horas no Jira)
+
+O que faz
+  Toda segunda às 9h, junto com o relatório semanal, lança no Clockwork as horas da semana anterior:
+  8h por dia útil, divididas pelas iniciativas em que você trabalhou. Feriados/férias do config.json
+  ficam em branco. Dias em que você já lançou qualquer coisa à mão são pulados (nada é duplicado).
+  Dias úteis sem NENHUMA reunião medida também são pulados (provável ausência) e aparecem
+  listados na saída: lance à mão se foi dia trabalhado.
+
+Como as 8h de cada dia são divididas
+  1. Rotinas (dailies, weeklies, WBR, 1:1s, planning, treinamentos...) -> PLATSERV-5270 pelo tempo real.
+  2. PLATSERV-4063 (Pesquisas com usuário) leva 30% do restante, toda semana (peso_fixo).
+  3. O resto vai para as iniciativas na proporção das reuniões de cada tema NA SEMANA.
+     Reuniões sem tema ("Outros") não pesam na divisão.
+  4. Fatias menores que 30 min são somadas à maior iniciativa do dia.
+  Cada lançamento leva o comentário "Automático (meeting-tracker) - ..." com as reuniões que o justificam.
+
+Iniciativas (clockwork.json)
+  PLATSERV-5270  Rotinas e dia a dia - Bianca Pessoa
+  PLATSERV-5274  Autoatendimento pós-venda (Bot CX WhatsApp / Mercado Livre)
+  PLATSERV-5275  Serviços em marketplaces (Shopee / Mercado Livre / Installation Services)
+  PLATSERV-4062  Extinguir a plataforma da venda legada
+  PLATSERV-1731  Agente de preço fixo / agente de vendas
+  PLATSERV-4063  Pesquisas com usuário para definir próximos passos
+  Para mudar: abra clockwork.json no Bloco de Notas e edite "regras" (termos do título da reunião)
+  ou "issue". Mantenha aspas e vírgulas.
+
+Instalação (uma vez, ~3 min)
+  1. Copie para a pasta C:\Users\<você>\meeting-tracker os arquivos novos/atualizados:
+     clockwork.py, clockwork.example.json, setup_clockwork.ps1, tracker.py, setup.ps1
+  2. Botão direito em setup_clockwork.ps1 > "Executar com o PowerShell"
+  3. Na página que abrir, crie o token da API (nome: meeting-tracker), copie e cole no PowerShell
+  4. Confira a simulação e responda S para lançar
+
+Comandos (PowerShell)
+  python "$HOME\meeting-tracker\tracker.py" clockwork --simular   -> mostra o que seria lançado
+  python "$HOME\meeting-tracker\tracker.py" clockwork             -> lança os dias pendentes agora
+  python "$HOME\meeting-tracker\tracker.py" clockwork token       -> troca o token (ex.: venceu)
+
+Onde ver
+  clockwork_lancamentos.csv  -> tudo o que foi lançado (data, issue, minutos, id do lançamento)
+  clockwork_erros.log        -> erros da execução automática (sem rede, token vencido...)
+
+Para desligar: em clockwork.json troque "ativo": true por "ativo": false.
+Para corrigir um lançamento: edite ou apague direto no Clockwork; o tracker não mexe em dias já lançados.
