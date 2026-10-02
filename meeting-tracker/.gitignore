@@ -1,0 +1,7 @@
+tracker.db
+config.json
+clockwork.json
+clockwork_lancamentos.csv
+dashboard.html
+*.xlsx
+__pycache__/

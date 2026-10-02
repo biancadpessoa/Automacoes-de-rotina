@@ -1,0 +1,17 @@
+TRACKER DE GESTÃO DO TEMPO
+Mede automaticamente o tempo em reuniões (Google Meet + Google Agenda + microfone do Windows),
+separa agendadas x fora da agenda (links do Chat), mostra as reuniões aceitas em que você não entrou
+e gera relatórios semanais e mensais no Google Drive.
+
+Requisitos: Windows 10/11, Google Chrome logado com a conta corporativa, Python 3.10+,
+Google Drive para desktop.
+
+Instalação: siga o guia passo a passo (PDF nesta pasta).
+Pasta do kit: https://drive.google.com/drive/folders/16m2i_j60zt3wcElqKGF_TxA-pb9ddV1V
+Resumo:
+  1. Extraia esta pasta em C:\Users\<você>\meeting-tracker
+  2. Clique com o botão direito em setup.ps1 > "Executar com o PowerShell"
+  3. Configure o script da agenda (agenda_export.gs) em script.google.com
+  4. Ajuste categorias e agendas "sempre presente" no config.json
+
+Nada sai do seu computador/Drive: os dados ficam no seu PC (tracker.db) e no seu Google Drive.

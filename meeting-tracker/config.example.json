@@ -1,0 +1,28 @@
+{
+  "nome": "",
+  "email": "",
+  "horas_semana": 42,
+  "relatorios_a_partir_de": "",
+  "pasta_relatorios": "Gestão do tempo - relatórios",
+  "_relatorios_ajuda": "Toda segunda: gera o semanal da semana anterior e, na 1ª segunda do mês, o mensal do mês anterior. Salvos na pasta do Drive, nunca sobrescritos (para regerar: python tracker.py relatorio semanal AAAA-MM-DD).",
+  "dias_sem_expediente": ["2026-01-01", "2026-02-16", "2026-02-17", "2026-04-03", "2026-04-21", "2026-05-01", "2026-06-04",
+                          "2026-09-07", "2026-10-12", "2026-11-02", "2026-11-20", "2026-12-25"],
+  "_dias_sem_expediente_ajuda": "Feriados, férias e folgas (AAAA-MM-DD). Não contam na capacidade do período.",
+  "ics_url": "",
+  "_ics_url_ajuda": "Opcional. Só funciona se o admin liberar o 'Endereço secreto no formato iCal'. Senão, use o agenda_export.gs.",
+  "agenda_json": "",
+  "_agenda_json_ajuda": "Vazio = procura meeting-tracker-agenda.json em '<letra>:/Meu Drive' (gerado pelo agenda_export.gs).",
+  "sempre_presente": [],
+  "_sempre_presente_ajuda": "Agendas em que você está sempre (presencial ou online). Contam pela duração inteira do evento, mesmo sem Meet. Basta parte do nome.",
+  "ignorar_eventos": ["almoço", "almoco", "foco", "focus", "bloqueio", "férias", "ferias", "ooo", "out of office", "deslocamento"],
+  "categorias": [
+    {"nome": "Rituais do time", "regras": ["daily", "planning", "review", "retro", "refinamento"]},
+    {"nome": "Weeklies & fóruns", "regras": ["weekly", "wbr", "mbr", "qbr", "semanal", "fórum", "forum", "all hands"]},
+    {"nome": "1:1s", "regras": ["<>", "1:1", "1on1", "^[\\wÀ-ú]+ ?[/e] ?[\\wÀ-ú]+$"]},
+    {"nome": "Treinamentos", "regras": ["treinamento", "onboarding", "workshop"]},
+    {"nome": "Projetos & discovery", "regras": ["discovery", "projeto", "proposta", "fluxo", "alinhamento"]}
+  ],
+  "_categorias_ajuda": "Cada reunião vai para a 1ª categoria cujo termo aparece no título (minúsculas; aceita regex). Máximo recomendado: 7 categorias.",
+  "categoria_padrao": "Outros",
+  "categoria_avulsa": "Calls avulsas"
+}

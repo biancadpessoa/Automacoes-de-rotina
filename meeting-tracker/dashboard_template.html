@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestão do Tempo</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10); --wash: rgba(11,11,11,0.04);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948; --s9: #a8a79f;
+  --focus: #e1e0d9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.05);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767; --s9: #6b6a64;
+    --focus: #33332f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 28px 16px 64px; }
+h1 { font-size: 22px; margin: 0; font-weight: 650; }
+h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
+.sub { color: var(--ink-2); margin-top: 4px; }
+.status { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 20px 0; }
+select, button, .btn { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 10px; }
+button, .btn { cursor: pointer; } .btn { text-decoration: none; } button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 18px; }
+.tiles { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 12px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+.tile.hero .value { font-size: 48px; line-height: 1.1; }
+.tile .note { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.meter { height: 8px; border-radius: 4px; background: var(--focus); margin-top: 12px; display: flex; overflow: hidden; gap: 2px; }
+.meter span { height: 100%; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.full { margin-top: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 10px; color: var(--ink-2); font-size: 12px; }
+.legend i, .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+svg text { fill: var(--muted); font-size: 11px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+tr.total td { font-weight: 600; border-bottom: 0; }
+tbody tr:hover { background: var(--wash); }
+.tag { font-size: 11px; color: var(--ink-2); border: 1px solid var(--ring); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.scroll { max-height: 420px; overflow: auto; }
+.empty { color: var(--muted); padding: 12px 0; }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px;
+       padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; max-width: 260px; z-index: 10; }
+@media (max-width: 800px) { .tiles { grid-template-columns: 1fr 1fr; } .tile.hero { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Gestão do tempo</h1>
+  <div class="sub">Tempo real em reuniões e calls, medido pelo Meet, pela agenda e pelo microfone</div>
+  <div class="status" id="status"></div>
+
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Visão">
+      <button data-g="week" aria-pressed="true">Semana</button><button data-g="month" aria-pressed="false">Mês</button>
+    </div>
+    <select id="period" aria-label="Período"></select>
+    <button id="avg" aria-pressed="false"></button>
+    <a id="dl" class="btn" download style="margin-left:auto">Baixar planilha (.xlsx)</a>
+  </div>
+
+  <section class="tiles">
+    <div class="card tile hero"><div class="label">Em reuniões</div><div class="value" id="k-meet"></div>
+      <div class="note" id="k-meet-n"></div><div class="meter" id="meter" aria-hidden="true"></div></div>
+    <div class="card tile"><div class="label">Tempo focado</div><div class="value" id="k-focus"></div><div class="note" id="k-focus-n"></div></div>
+    <div class="card tile"><div class="label">Recorrente (pré-travado)</div><div class="value" id="k-rec"></div><div class="note" id="k-rec-n"></div></div>
+    <div class="card tile"><div class="label">Fora da agenda</div><div class="value" id="k-off"></div><div class="note" id="k-off-n"></div></div>
+  </section>
+
+  <section class="card full">
+    <h2 id="chart-title">Horas em reunião por semana</h2>
+    <div class="legend" id="legend"></div>
+    <div id="chart"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Compilado por tema</h2><table id="themes"></table></div>
+    <div class="card"><h2>Por dia da semana</h2><div id="days"></div></div>
+  </section>
+
+  <section class="card full"><h2>Atividades</h2><div class="scroll"><table id="acts"></table></div></section>
+
+  <section class="grid2">
+    <div class="card"><h2>Calls fora da agenda</h2><div class="scroll"><table id="off"></table></div></div>
+    <div class="card"><h2>Agendadas sem participação</h2><div class="scroll"><table id="missed"></table></div></div>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+<script>
+const DATA = /*__DATA__*/null;
+const CATS = DATA.categories;
+const color = c => `var(--s${Math.min(CATS.indexOf(c), 8) + 1})`;
+const H = DATA.hoursPerWeek;
+const fmtH = m => { const h = Math.floor(m / 60), mm = Math.round(m % 60); return mm === 60 ? `${h + 1}h` : `${h}h${mm ? String(mm).padStart(2, "0") : ""}`; };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const weekStart = w => { const [y, n] = w.split("-W").map(Number); const d = new Date(y, 0, 4); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (n - 1) * 7); return d; };
+const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const dm = x => `${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")}`;
+
+// Cada visão sabe: a chave de período de uma data, o rótulo e os dias (seg–sex) que o período cobre
+const G = {
+  week: {
+    key: r => r.week, name: "semana", da: "da semana", avgLabel: "Média semanal", nominalDays: 5,
+    label: w => { const d = weekStart(w), e = new Date(d); e.setDate(d.getDate() + 4); return `${dm(d)} – ${dm(e)}`; },
+    short: w => dm(weekStart(w)),
+    days: w => { const out = [], d = weekStart(w); for (let i = 0; i < 5; i++, d.setDate(d.getDate() + 1)) out.push(new Date(d)); return out; },
+  },
+  month: {
+    key: r => r.date.slice(0, 7), name: "mês", da: "do mês", avgLabel: "Média mensal", nominalDays: 21,
+    label: m => { const [y, n] = m.split("-").map(Number); return `${MONTHS[n - 1]} ${y}`; },
+    short: m => MONTHS[+m.slice(5) - 1].slice(0, 3),
+    days: m => { const [y, n] = m.split("-").map(Number), out = [];
+      for (const d = new Date(y, n - 1, 1); d.getMonth() === n - 1; d.setDate(d.getDate() + 1)) if (d.getDay() % 6) out.push(new Date(d)); return out; },
+  },
+};
+// só contam dias úteis (sem feriados/folgas) que já passaram e estão dentro do histórico (período atual e o primeiro são parciais)
+const OFF = new Set(DATA.daysOff);
+const workDates = (g, p) => G[g].days(p).filter(d => iso(d) >= DATA.firstDay && iso(d) <= DATA.today && !OFF.has(iso(d)));
+const capMin = (g, p) => H * 12 * workDates(g, p).length;  // H horas/semana ÷ 5 dias × 60 min
+let CAP = H * 60;
+const pct = (m, cap = CAP) => `${cap ? Math.round(m / cap * 100) : 0}%`;
+const sum = (a, f = r => r.min) => a.reduce((s, r) => s + f(r), 0);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const kindLabel = { agendada: "agendada", chat: "link do chat", avulsa: "link direto", presencial: "sem Meet" };
+
+let gran = "week", avgMode = false;
+const periods = g => [...new Set(DATA.rows.map(G[g].key))].sort();
+const sel = document.getElementById("period"), avgBtn = document.getElementById("avg");
+const segBtns = document.querySelectorAll(".seg button");
+function fillPeriods() {
+  sel.innerHTML = "";
+  periods(gran).reverse().forEach(p => sel.add(new Option(G[gran].label(p), p)));
+}
+segBtns.forEach(b => b.onclick = () => {
+  if (b.dataset.g === gran) return;
+  const cur = sel.value;
+  gran = b.dataset.g;
+  fillPeriods();
+  // mantém o contexto: semana -> mês que a contém; mês -> última semana dele
+  const target = gran === "month" ? iso(weekStart(cur)).slice(0, 7)
+    : periods("week").filter(w => G.month.key({ date: iso(weekStart(w)) }) === cur).pop();
+  if (target && [...sel.options].some(o => o.value === target)) sel.value = target;
+  render();
+});
+sel.onchange = () => { avgMode = false; render(); };
+avgBtn.onclick = () => { avgMode = !avgMode; render(); };
+
+document.getElementById("dl").href = encodeURI(DATA.sheet);
+document.getElementById("status").textContent =
+  `Atualizado em ${DATA.generated} · ${DATA.calendar} · microfone: ${DATA.micDays ? DATA.micDays + " dia(s) registrados" : "ainda sem registros"}`;
+document.getElementById("legend").innerHTML = CATS.map(c => `<span><i style="background:${color(c)}"></i>${esc(c)}</span>`).join("");
+
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.style.display = "block";
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8), y = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + "px"; tip.style.top = y + "px"; }
+const hideTip = () => tip.style.display = "none";
+
+function render() {
+  const g = G[gran], all = periods(gran);
+  segBtns.forEach(b => b.setAttribute("aria-pressed", b.dataset.g === gran));
+  avgBtn.textContent = g.avgLabel;
+  avgBtn.setAttribute("aria-pressed", avgMode);
+  document.getElementById("chart-title").textContent = `Horas em reunião por ${g.name}`;
+
+  const rows = avgMode ? DATA.rows : DATA.rows.filter(r => g.key(r) === sel.value);
+  const dates = avgMode ? all.flatMap(p => workDates(gran, p)) : workDates(gran, sel.value);
+  // na média, normaliza para um período "cheio" (5 dias na semana, 21 no mês)
+  const div = avgMode ? dates.length / g.nominalDays : 1;
+  CAP = avgMode ? H * 12 * g.nominalDays : capMin(gran, sel.value);
+  const per = m => m / div;
+  const total = per(sum(rows)), rec = per(sum(rows.filter(r => r.rec)));
+  const off = rows.filter(r => r.kind === "chat" || r.kind === "avulsa"), offM = per(sum(off));
+  const focus = Math.max(0, CAP - total);
+  const full = g.days(sel.value).filter(d => !OFF.has(iso(d))).length;
+  const suffix = avgMode ? ` por ${g.name}, em média (${all.length} ${gran === "week" ? "semanas" : "meses"})`
+    : dates.length < full ? ` até agora (${dates.length} de ${full} dias úteis)` : ` ${g.da}`;
+
+  document.getElementById("k-meet").textContent = fmtH(total);
+  document.getElementById("k-meet-n").textContent = `${pct(total)} das ${fmtH(CAP)}${suffix}`;
+  document.getElementById("k-focus").textContent = fmtH(focus);
+  document.getElementById("k-focus-n").textContent = `${pct(focus)} livre para foco e demandas`;
+  document.getElementById("k-rec").textContent = fmtH(rec);
+  document.getElementById("k-rec-n").textContent = `${pct(rec)} travado por reuniões fixas`;
+  document.getElementById("k-off").textContent = fmtH(offM);
+  document.getElementById("k-off-n").textContent = `${avgMode ? (off.length / div).toFixed(1) : off.length} calls de link direto ou chat`;
+
+  const byCat = CATS.map(c => ({ c, m: per(sum(rows.filter(r => r.cat === c))) })).filter(x => x.m > 0);
+  document.getElementById("meter").innerHTML = byCat.map(x => `<span style="width:${x.m / CAP * 100}%;background:${color(x.c)}"></span>`).join("");
+
+  // compilado por tema, no formato da planilha
+  document.getElementById("themes").innerHTML =
+    `<thead><tr><th>Tema</th><th class="n">Horas</th><th class="n">% ${g.da}</th><th class="n">Recorrente</th></tr></thead><tbody>` +
+    byCat.sort((a, b) => b.m - a.m).map(x => {
+      const r = per(sum(rows.filter(r => r.cat === x.c && r.rec)));
+      return `<tr><td><span class="sw" style="background:${color(x.c)}"></span>${esc(x.c)}</td><td class="n">${fmtH(x.m)}</td><td class="n">${pct(x.m)}</td><td class="n">${fmtH(r)}</td></tr>`;
+    }).join("") +
+    `<tr><td><span class="sw" style="background:var(--focus)"></span>Tempo focado</td><td class="n">${fmtH(focus)}</td><td class="n">${pct(focus)}</td><td class="n">–</td></tr>` +
+    `<tr class="total"><td>Total</td><td class="n">${fmtH(CAP)}</td><td class="n">100%</td><td class="n">${fmtH(rec)}</td></tr></tbody>`;
+
+  // atividades
+  const acts = {};
+  rows.forEach(r => { const a = acts[r.title] ??= { title: r.title, cat: r.cat, m: 0, n: 0, rec: r.rec, kinds: new Set() }; a.m += r.min; a.n++; a.kinds.add(r.kind); });
+  const actList = Object.values(acts).sort((a, b) => b.m - a.m);
+  document.getElementById("acts").innerHTML = actList.length ?
+    `<thead><tr><th>Atividade</th><th>Tema</th><th class="n">Horas${avgMode ? "/" + g.name : ""}</th><th class="n">Vezes</th><th>Tipo</th></tr></thead><tbody>` +
+    actList.map(a => `<tr><td>${esc(a.title)}</td><td><span class="sw" style="background:${color(a.cat)}"></span>${esc(a.cat)}</td><td class="n">${fmtH(per(a.m))}</td><td class="n">${a.n}</td>
+      <td>${a.rec ? '<span class="tag">recorrente</span> ' : ""}${[...a.kinds].filter(k => k !== "agendada").map(k => `<span class="tag">${kindLabel[k]}</span>`).join(" ")}</td></tr>`).join("") + "</tbody>"
+    : `<tr><td class="empty">Nenhuma reunião neste período.</td></tr>`;
+
+  const dmy = d => d.split("-").reverse().slice(0, 2).join("/");
+  document.getElementById("off").innerHTML = off.length ?
+    `<thead><tr><th>Quando</th><th>Call</th><th class="n">Duração</th><th>Origem</th></tr></thead><tbody>` +
+    off.slice().reverse().map(r => `<tr><td>${dmy(r.date)} ${r.start}</td><td>${esc(r.title)}</td><td class="n">${fmtH(r.min)}</td><td><span class="tag">${kindLabel[r.kind]}</span></td></tr>`).join("") + "</tbody>"
+    : `<tr><td class="empty">Nenhuma call fora da agenda.</td></tr>`;
+
+  const missed = avgMode ? DATA.missed : DATA.missed.filter(m => g.key(m) === sel.value);
+  document.getElementById("missed").innerHTML = DATA.calendar.startsWith("agenda conectada") ? (missed.length ?
+    `<thead><tr><th>Quando</th><th>Evento</th></tr></thead><tbody>` + missed.slice().reverse().map(m => `<tr><td>${dmy(m.date)} ${m.start}</td><td>${esc(m.title)}</td></tr>`).join("") + "</tbody>"
+    : `<tr><td class="empty">Você participou de todas as reuniões aceitas.</td></tr>`)
+    : `<tr><td class="empty">Conecte a agenda (agenda_export.gs + Google Drive para desktop) para ver reuniões aceitas em que você não entrou e eventos sem Meet.</td></tr>`;
+
+  renderDays(rows, dates);
+  renderChart();
+}
+
+function renderChart() {
+  const g = G[gran], all = periods(gran);
+  const el = document.getElementById("chart"), W = el.clientWidth || 900, Hh = 260, m = { t: 14, r: 8, b: 26, l: 40 };
+  const data = all.map(p => ({ p, cap: capMin(gran, p), segs: CATS.map(c => ({ c, m: sum(DATA.rows.filter(r => g.key(r) === p && r.cat === c)) })).filter(s => s.m > 0) }));
+  const maxH = Math.max(...data.map(d => Math.max(d.cap, sum(d.segs, s => s.m)) / 60), 1);
+  const step = [5, 10, 20, 25, 50, 100].find(st => maxH / st <= 5) || 100;
+  const top = Math.ceil(maxH / step) * step, y = h => m.t + (Hh - m.t - m.b) * (1 - h / top);
+  const band = (W - m.l - m.r) / all.length, bw = Math.min(gran === "month" ? 40 : 24, band * 0.6);
+  let s = `<svg width="${W}" height="${Hh}" role="img" aria-label="Horas em reunião por ${g.name}, empilhadas por tema">`;
+  for (let h = 0; h <= top; h += step) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(h)}" y2="${y(h)}" stroke="var(--grid)"/><text x="${m.l - 6}" y="${y(h) + 4}" text-anchor="end">${h}h</text>`;
+  data.forEach((d, i) => {
+    const x = m.l + band * i + (band - bw) / 2, isSel = !avgMode && d.p === sel.value, op = avgMode || isSel ? 1 : .55;
+    let acc = 0;
+    d.segs.forEach((q, j) => {
+      const y0 = y(acc / 60), yTop = y((acc + q.m) / 60), last = j === d.segs.length - 1;
+      const h = Math.max(0, y0 - yTop - (last ? 0 : 2));  // 2px de respiro entre segmentos
+      if (last) { const r = Math.min(4, h), t = y0 - h;
+        s += `<path d="M${x},${y0} V${t + r} Q${x},${t} ${x + r},${t} H${x + bw - r} Q${x + bw},${t} ${x + bw},${t + r} V${y0} Z" fill="${color(q.c)}" opacity="${op}"/>`;
+      } else s += `<rect x="${x}" y="${y0 - h}" width="${bw}" height="${h}" fill="${color(q.c)}" opacity="${op}"/>`;
+      acc += q.m;
+    });
+    // marca da capacidade do período (dias úteis × jornada)
+    s += `<line x1="${x - 4}" x2="${x + bw + 4}" y1="${y(d.cap / 60)}" y2="${y(d.cap / 60)}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${m.l + band * i}" y="${m.t}" width="${band}" height="${Hh - m.t - m.b}" fill="transparent"/>`;
+    if (i % Math.ceil(all.length / 10) === 0 || isSel) s += `<text x="${x + bw / 2}" y="${Hh - 8}" text-anchor="middle" ${isSel ? 'style="fill:var(--ink);font-weight:600"' : ""}>${g.short(d.p)}</text>`;
+  });
+  el.innerHTML = s + `</svg><div class="status">Traço sobre cada barra = capacidade ${g.da} (${H}h/semana nos dias úteis já passados).</div>`;
+  el.querySelectorAll(".hit").forEach(r => {
+    const d = data[r.dataset.i], tot = sum(d.segs, q => q.m);
+    r.onmousemove = e => showTip(e, `<b>${g.label(d.p)}</b> · ${fmtH(tot)} (${pct(tot, d.cap)} de ${fmtH(d.cap)})<br>` +
+      d.segs.slice().reverse().map(q => `<span class="sw" style="background:${color(q.c)}"></span>${esc(q.c)}: ${fmtH(q.m)}`).join("<br>"));
+    r.onmouseleave = hideTip;
+    r.onclick = () => { sel.value = d.p; avgMode = false; render(); };
+    r.style.cursor = "pointer";
+  });
+}
+
+function renderDays(rows, dates) {
+  const names = ["Seg", "Ter", "Qua", "Qui", "Sex"], perDay = H * 12;
+  const wd = d => (d.getDay() + 6) % 7;
+  const byDay = names.map((n, i) => {
+    const count = Math.max(1, dates.filter(d => wd(d) === i).length);  // média por ocorrência do dia
+    return { n, segs: CATS.map(c => ({ c, m: sum(rows.filter(r => wd(new Date(r.date + "T12:00")) === i && r.cat === c)) / count })).filter(s => s.m > 0) };
+  });
+  const multi = dates.length > 5;
+  document.getElementById("days").innerHTML = byDay.map(d => {
+    const tot = sum(d.segs, s => s.m);
+    return `<div style="display:grid;grid-template-columns:34px 1fr 64px;gap:8px;align-items:center;margin:10px 0">
+      <span class="sub" style="margin:0">${d.n}</span>
+      <div style="height:14px;border-radius:0 4px 4px 0;background:var(--focus);display:flex;gap:2px;overflow:hidden">${d.segs.map(s =>
+        `<span title="${esc(s.c)}: ${fmtH(s.m)}" style="width:${Math.min(100, s.m / perDay * 100)}%;background:${color(s.c)}"></span>`).join("")}</div>
+      <span class="n" style="text-align:right;font-variant-numeric:tabular-nums">${fmtH(tot)}</span></div>`;
+  }).join("") + `<div class="status">${multi ? "Média por dia no período. " : ""}Barra cheia = ${fmtH(perDay)}. Parte clara = livre.</div>`;
+}
+
+fillPeriods();
+render();
+addEventListener("resize", renderChart);
+</script>
+</body>
+</html>
