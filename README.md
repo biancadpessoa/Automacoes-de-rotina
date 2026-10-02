@@ -31,7 +31,7 @@ Os números contam o tempo em que você **realmente esteve** na call, não o tem
 1. Baixe a pasta `meeting-tracker` (deste repositório ou do zip do kit) e extraia em `C:\Users\<seu usuário>\`.
 2. Clique com o botão direito em **`setup.ps1`** e escolha **Executar com o PowerShell**. Ele instala o tracker e cria as tarefas agendadas.
 3. Configure a exportação da agenda (`agenda_export.gs`) em script.google.com. Os passos estão no PDF *Gestão do Tempo Automática - Passo a passo*.
-4. Para o Clockwork, clique com o botão direito em **`setup_clockwork.ps1`** e escolha **Executar com o PowerShell**. Ele:
+4. Para o Clockwork, dê **dois cliques em `Instalar Clockwork.cmd`**. Se o Windows mostrar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**. O instalador:
    - instala a biblioteca que guarda o token no Gerenciador de Credenciais do Windows;
    - cria o `clockwork.json` com as iniciativas;
    - abre a página do Atlassian para você criar o token (nome: `meeting-tracker`) e colar no PowerShell;
@@ -92,7 +92,7 @@ python "$HOME\meeting-tracker\tracker.py" relatorio semanal 2026-09-25   # gera 
 | `clockwork.py` | Divide as horas por iniciativa e lança os worklogs pela API do Jira. |
 | `clockwork.example.json` | Modelo do `clockwork.json` (iniciativas, regras e parâmetros). |
 | `setup.ps1` / `install_tasks.ps1` | Instalador do tracker e das tarefas agendadas do Windows. |
-| `setup_clockwork.ps1` | Instalador do Clockwork (token, simulação e confirmação). |
+| `Instalar Clockwork.cmd` / `setup_clockwork.ps1` | Instalador do Clockwork (token, simulação e confirmação). O `.cmd` abre o `.ps1` sem depender da política de scripts. |
 | `sources.py`, `sessions.py`, `calendar_ics.py` | Leitura do Chrome, do microfone e da agenda. |
 | `report.py`, `export_xlsx.py`, `dashboard_template.html` | Relatórios e dashboard. |
 | `agenda_export.gs` | Script do Google Apps Script que exporta a agenda para o Drive. |

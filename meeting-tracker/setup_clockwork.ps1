@@ -2,19 +2,29 @@
 # Uso: clique com o botão direito > "Executar com o PowerShell"
 #   ou: powershell -ExecutionPolicy Bypass -File setup_clockwork.ps1
 $ErrorActionPreference = "Continue"
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$env:PYTHONIOENCODING = "utf-8"
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
+function Sair($code) { Pop-Location; Read-Host "`nPressione Enter para fechar"; exit $code }
+# arquivos baixados da internet ficam marcados como bloqueados pelo Windows
+Get-ChildItem $dir -File | Unblock-File -ErrorAction SilentlyContinue
 Write-Host "`n=== Clockwork automático - instalação ===`n" -ForegroundColor Cyan
 Push-Location $dir
 
 if (-not (Test-Path (Join-Path $dir "config.json"))) {
     Write-Host "O tracker ainda não foi instalado. Rode primeiro o setup.ps1." -ForegroundColor Yellow
-    Pop-Location; exit 1
+    Sair 1
+}
+
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    Write-Host "Python não encontrado. Instale o Python 3.12 pela Microsoft Store e rode de novo." -ForegroundColor Yellow
+    Sair 1
 }
 
 # 1) Biblioteca que guarda o token no Gerenciador de Credenciais do Windows
 Write-Host "[1/4] Instalando biblioteca de credenciais..."
 & python -m pip install --quiet --user keyring
-if ($LASTEXITCODE -ne 0) { Write-Host "Falha ao instalar o keyring (proxy/rede?)." -ForegroundColor Red; Pop-Location; exit 1 }
+if ($LASTEXITCODE -ne 0) { Write-Host "Falha ao instalar o keyring (proxy/rede?)." -ForegroundColor Red; Sair 1 }
 
 # 2) Configuração das iniciativas
 $cwPath = Join-Path $dir "clockwork.json"
@@ -33,7 +43,7 @@ Start-Process "https://id.atlassian.com/manage-profile/security/api-tokens"
 & python (Join-Path $dir "tracker.py") clockwork token
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Não consegui conectar no Jira com esse token. Confira se copiou o token inteiro e rode de novo." -ForegroundColor Red
-    Pop-Location; exit 1
+    Sair 1
 }
 
 # 4) Simulação e confirmação
@@ -52,4 +62,4 @@ if ($ok -match '^[sS]') {
     [IO.File]::WriteAllText($cwPath, $cfg, (New-Object Text.UTF8Encoding $false))
     Write-Host "`nNada foi lançado e o automático ficou desligado. Ajuste o clockwork.json e rode este instalador de novo." -ForegroundColor Yellow
 }
-Pop-Location
+Sair 0

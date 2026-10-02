@@ -28,7 +28,7 @@ Iniciativas (clockwork.json)
 Instalação (uma vez, ~3 min)
   1. Copie para a pasta C:\Users\<você>\meeting-tracker os arquivos novos/atualizados:
      clockwork.py, clockwork.example.json, setup_clockwork.ps1, tracker.py, setup.ps1
-  2. Botão direito em setup_clockwork.ps1 > "Executar com o PowerShell"
+  2. Dê dois cliques em "Instalar Clockwork.cmd" (se o Windows avisar, clique em "Mais informações" > "Executar assim mesmo")
   3. Na página que abrir, crie o token da API (nome: meeting-tracker), copie e cole no PowerShell
   4. Confira a simulação e responda S para lançar
 
