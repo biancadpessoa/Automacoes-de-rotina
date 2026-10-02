@@ -33,6 +33,7 @@ LOG = os.path.join(HERE, "clockwork_lancamentos.csv")
 KEYRING_SERVICE = "meeting-tracker-jira"
 TAG = "Automático (meeting-tracker)"
 ROTINAS, OUTROS = "rotinas", "outros"
+KNOWN_CLOUDS = {"https://madeiramadeira.atlassian.net": "c52b487a-f294-4cb9-a67e-3b8983ddfeab"}
 
 
 def load_config():
@@ -150,31 +151,72 @@ def get_token(email):
 
 
 def save_token(email):
+    """Pede o token, testa no Jira e só então guarda (token errado não fica salvo)."""
     import getpass
     import keyring
     print("Crie o token em https://id.atlassian.com/manage-profile/security/api-tokens")
-    print("(Criar token da API > nome 'meeting-tracker' > Copiar) e cole abaixo. Nada aparece enquanto você cola.")
-    token = getpass.getpass("Token da API do Jira: ").strip()
-    if not token:
-        raise SystemExit("Nenhum token informado.")
-    keyring.set_password(KEYRING_SERVICE, email, token)
-    me = Jira(load_config()["site"], email, token).get("/rest/api/3/myself")
-    print(f"Token salvo no Gerenciador de Credenciais do Windows. Conectado como {me['displayName']}.")
+    print("  Use o botão 'Criar token da API' (o SEM escopos), nome 'meeting-tracker', validade máxima > Copiar.")
+    print("  Cole abaixo com o botão direito do mouse ou Ctrl+V e aperte Enter. Nada aparece enquanto você cola.")
+    for tentativa in range(3):
+        token = "".join(getpass.getpass("Token da API do Jira: ").split())  # tira espaços e quebras de linha
+        if len(token) < 20:
+            print(f"  Recebi {len(token)} caracteres; é curto demais para um token (os atuais têm cerca de 190). Copie de novo e cole.")
+            continue
+        try:
+            jira = Jira(load_config()["site"], email, token)
+            me = jira.get("/rest/api/3/myself")
+        except RuntimeError as e:
+            print(f"  O Jira recusou o token ({e}).")
+            print(f"  Confira se o token foi criado na conta {email} e cole de novo.")
+            continue
+        keyring.set_password(KEYRING_SERVICE, email, token)
+        print(f"Token salvo no Gerenciador de Credenciais do Windows. Conectado como {me['displayName']}.")
+        return
+    raise SystemExit("Não consegui validar o token. Rode de novo: python tracker.py clockwork token")
 
 
 class Jira:
+    """Token clássico funciona no endereço do site; token "com escopos" só no gateway
+    api.atlassian.com/ex/jira/<cloudId>. Tenta o site e, se recusar o login, troca para o gateway."""
+    GATEWAY = "https://api.atlassian.com/ex/jira/"
+
     def __init__(self, site, email, token):
         self.site = site.rstrip("/")
+        self.base = None
         self.auth = "Basic " + base64.b64encode(f"{email}:{token}".encode()).decode()
 
-    def _call(self, method, path, body=None):
-        req = urllib.request.Request(self.site + path, method=method,
+    def _request(self, base, method, path, body=None):
+        req = urllib.request.Request(base + path, method=method,
                                      data=json.dumps(body).encode() if body is not None else None,
                                      headers={"Authorization": self.auth, "Accept": "application/json",
                                               "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read() or b"{}")
+
+    def _connect(self):
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return json.loads(r.read() or b"{}")
+            self._request(self.site, "GET", "/rest/api/3/myself")
+            self.base = self.site
+        except urllib.error.HTTPError as e:
+            if e.code not in (401, 403):
+                raise RuntimeError(f"Jira GET /rest/api/3/myself: HTTP {e.code} {e.read()[:300]!r}") from None
+            cloud = load_config().get("cloud_id") or KNOWN_CLOUDS.get(self.site)
+            if not cloud:
+                with urllib.request.urlopen(self.site + "/_edge/tenant_info", timeout=30) as r:  # público
+                    cloud = json.loads(r.read())["cloudId"]
+            gw = self.GATEWAY + cloud
+            try:
+                self._request(gw, "GET", "/rest/api/3/myself")
+            except urllib.error.HTTPError as e2:
+                raise RuntimeError(f"Jira recusou o login (HTTP {e2.code}): token errado, vencido, de outra "
+                                   "conta ou sem os escopos read:jira-work, write:jira-work e read:jira-user") from None
+            self.base = gw
+
+    def _call(self, method, path, body=None):
+        if self.base is None:
+            self._connect()
+        try:
+            return self._request(self.base, method, path, body)
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"Jira {method} {path}: HTTP {e.code} {e.read()[:300]!r}") from None
 
