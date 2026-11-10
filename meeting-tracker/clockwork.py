@@ -12,8 +12,9 @@ Regra de cada dia (horas_dia; 8.8 = "1d" do Jira):
      no restante e segue a mesma proporção.
   3. Iniciativas com "peso_fixo" (ex.: 0.3) levam essa fração do foco toda semana, antes da proporção.
   4. Semana sem nenhuma reunião de iniciativa usa "sem_tema".
-Dias que já têm qualquer lançamento seu no Jira são pulados (nada é duplicado nem sobrescrito),
-assim como dias úteis sem nenhuma reunião medida (provável ausência; aparecem na saída).
+Cada dia é completado até horas_dia: o que você já lançou à mão fica como está e só a diferença
+é lançada (nada é duplicado nem sobrescrito). Dia sem reunião usa os temas das suas conversas no
+Claude (títulos do histórico do Chrome); sem elas, a proporção da semana. Esses dias aparecem na saída.
 """
 import base64
 import csv
@@ -71,9 +72,9 @@ def _round(alloc, total, step):
     return out
 
 
-def split_day(day_min, week_min, cw):
-    """day_min/week_min: {bucket: minutos}. Devolve {issue: minutos} somando horas_dia."""
-    total = int(cw.get("horas_dia", 8) * 60)
+def split_day(day_min, week_min, cw, total=None):
+    """day_min/week_min: {bucket: minutos}. Devolve {issue: minutos} somando `total` (padrão horas_dia)."""
+    total = total or int(cw.get("horas_dia", 8) * 60)
     step = int(cw.get("fracao_minutos", 15))
     rot = min(day_min.get(ROTINAS, 0), total)
     rest = total - rot
@@ -102,40 +103,61 @@ def split_day(day_min, week_min, cw):
     return out
 
 
-def plan(data, cw, done_days, today=None, skipped=None):
+def plan(data, cw, done_days, today=None, warnings=None):
     """Dias úteis pendentes -> lista de lançamentos {date, issue, min, comment}.
-    Dia útil sem nenhuma reunião medida provavelmente é ausência (férias, atestado, PC desligado):
-    fica de fora e vai para `skipped`, para lançar à mão se foi dia trabalhado."""
+    done_days: {data: minutos já lançados}. Cada dia é completado até horas_dia (o que já foi
+    lançado à mão fica como está). Dia sem reunião medida usa os temas das conversas no Claude
+    daquele dia; sem elas, a proporção da semana (e entra em `warnings` para conferir)."""
     today = today or date.fromisoformat(data["today"])
     first = max(date.fromisoformat(data["firstDay"]), date.fromisoformat(cw["lancar_a_partir_de"]))
     off = set(data["daysOff"])
+    full = int(cw.get("horas_dia", 8) * 60)
+    step = int(cw.get("fracao_minutos", 15))
     by_day, by_week, titles = defaultdict(lambda: defaultdict(float)), defaultdict(lambda: defaultdict(float)), defaultdict(list)
     for r in data["rows"]:
         b = bucket(r["title"], cw)
         by_day[r["date"]][b] += r["min"]
         by_week[r["week"]][b] += r["min"]
         titles[(r["date"], b)].append(r["title"])
+    claude, claude_titles = defaultdict(lambda: defaultdict(float)), defaultdict(list)
+    for c in data.get("claude", []):
+        b = bucket(c["title"], cw)
+        if b not in (ROTINAS, OUTROS):
+            claude[c["date"]][b] += max(c["min"], 1)
+            claude_titles[(c["date"], b)].append(c["title"])
     names = {i["issue"]: i["nome"] for i in cw["iniciativas"]}
     names[cw["rotinas"]["issue"]] = "Rotinas"
     entries = []
     d = first
     while d < today:
         ds = d.isoformat()
-        if d.weekday() < 5 and ds not in off and ds not in done_days:
-            if not by_day.get(ds) and cw.get("pular_dias_sem_reuniao", True):
-                if skipped is not None:
-                    skipped.append(ds)
-                d += timedelta(days=1)
-                continue
+        missing = full - int(done_days.get(ds, 0))
+        if d.weekday() < 5 and ds not in off and missing >= step:
             week = d.strftime("%G-W%V")
-            for issue, m in split_day(by_day[ds], by_week[week], cw).items():
+            weights, source = by_week[week], "foco, proporcional aos temas da semana"
+            if not by_day.get(ds):
+                if not cw.get("completar_dias_sem_reuniao", True):
+                    if warnings is not None:
+                        warnings.append(f"{ds}: sem reuniões, não lançado")
+                    d += timedelta(days=1)
+                    continue
+                if claude.get(ds):
+                    weights, source = claude[ds], None
+                elif warnings is not None:
+                    warnings.append(f"{ds}: sem reuniões nem conversas no Claude medidas - usei a proporção da semana")
+            if ds in done_days and warnings is not None:
+                warnings.append(f"{ds}: já tinha {_fmt(done_days[ds])} lançado à mão - completei {_fmt(missing)}")
+            for issue, m in split_day(by_day[ds], weights, cw, missing).items():
                 b = ROTINAS if issue == cw["rotinas"]["issue"] else issue
-                met = titles.get((ds, b), [])
+                met, chats = titles.get((ds, b), []), claude_titles.get((ds, issue), [])
                 if met:
                     uniq = list(dict.fromkeys(met))
                     why = f"{len(met)} {'reunião' if len(met) == 1 else 'reuniões'}: " + ", ".join(uniq[:3]) + ("…" if len(uniq) > 3 else "")
+                elif chats and source is None:
+                    uniq = list(dict.fromkeys(chats))
+                    why = "análises no Claude: " + ", ".join(uniq[:3]) + ("…" if len(uniq) > 3 else "")
                 else:
-                    why = "foco, proporcional aos temas da semana"
+                    why = source or "foco, proporcional às análises do dia no Claude"
                 entries.append({"date": ds, "issue": issue, "nome": names.get(issue, issue), "min": m,
                                 "comment": f"{TAG} - {why}"})
         d += timedelta(days=1)
@@ -231,7 +253,7 @@ class Jira:
         return self._call("POST", path, body)
 
     def logged_days(self, a, b):
-        """Datas (AAAA-MM-DD) entre a e b em que eu já tenho algum worklog, em qualquer issue."""
+        """{AAAA-MM-DD: minutos} que eu já lancei entre a e b, somando todas as issues."""
         me = self.get("/rest/api/3/myself")["accountId"]
         jql = f'worklogAuthor = currentUser() AND worklogDate >= "{a}" AND worklogDate <= "{b}"'
         keys, token = [], None
@@ -245,18 +267,18 @@ class Jira:
             if not token:
                 break
         after = int(datetime.combine(a, datetime.min.time()).astimezone().timestamp() * 1000)
-        days = set()
+        days = defaultdict(float)
         for k in keys:
             start = 0
             while True:
                 r = self.get(f"/rest/api/3/issue/{k}/worklog?startedAfter={after}&startAt={start}&maxResults=1000")
                 for w in r.get("worklogs", []):
                     if w["author"]["accountId"] == me:
-                        days.add(_parse(w["started"]).date().isoformat())
+                        days[_parse(w["started"]).date().isoformat()] += w["timeSpentSeconds"] / 60
                 start += len(r.get("worklogs", []))
                 if not r.get("worklogs") or start >= r.get("total", 0):
                     break
-        return days
+        return dict(days)
 
     def add_worklog(self, issue, started, minutes, comment):
         body = {"started": started.strftime("%Y-%m-%dT%H:%M:%S.000%z"), "timeSpentSeconds": int(minutes * 60),
@@ -302,14 +324,17 @@ def sync(data, email, simulate=False):
         if not simulate:
             raise RuntimeError("token da API do Jira não configurado (rode: python tracker.py clockwork token)")
         print("Sem token do Jira: simulando sem conferir os dias já lançados.\n")
-        jira, done = None, set()
+        jira, done = None, {}
     else:
         jira = Jira(cw["site"], email, token)
-        done = jira.logged_days(a, today - timedelta(days=1)) if a < today else set()
-    skipped = []
-    entries = plan(data, cw, done, today, skipped)
-    if skipped:
-        print("Dias sem nenhuma reunião medida, NÃO lançados (lance à mão se trabalhou):", ", ".join(skipped))
+        done = jira.logged_days(a, today - timedelta(days=1)) if a < today else {}
+    warnings = []
+    entries = plan(data, cw, done, today, warnings)
+    if warnings:
+        print("Confira estes dias:")
+        for w_ in warnings:
+            print("  " + w_)
+        print()
     if simulate:
         show(entries)
         return entries

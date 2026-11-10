@@ -5,10 +5,10 @@
   "horas_dia": 8.8,
   "fracao_minutos": 15,
   "minimo_minutos": 30,
-  "pular_dias_sem_reuniao": true,
+  "completar_dias_sem_reuniao": true,
   "inicio_do_dia": "09:00",
   "lancar_a_partir_de": "2026-09-11",
-  "_ajuda": "Toda segunda o tracker lança no Jira (Clockwork) os dias úteis pendentes até ontem, a partir de lancar_a_partir_de. Dias que já têm qualquer lançamento seu são pulados. Teste antes com: python tracker.py clockwork --simular",
+  "_ajuda": "Toda segunda o tracker lança no Jira (Clockwork) os dias úteis pendentes até ontem, a partir de lancar_a_partir_de. Cada dia é completado até horas_dia (lançamentos manuais são mantidos). Dia sem reunião usa os temas das conversas no Claude daquele dia. Teste antes com: python tracker.py clockwork --simular",
 
   "rotinas": {
     "issue": "PLATSERV-5270",

@@ -51,11 +51,11 @@ Cada dia útil recebe 8,8h (`horas_dia`, igual ao "1d" do Jira), divididas assim
 
 Os lançamentos do dia saem em sequência a partir das 09:00, em múltiplos de 15 min. Cada um leva o comentário `Automático (meeting-tracker) - <reuniões que justificam>`.
 
-**O que nunca é lançado:**
-- Feriados e folgas listados em `dias_sem_expediente`, no `config.json`.
-- Dias em que você **já lançou qualquer coisa**. A automação não duplica nem sobrescreve.
-- Dias úteis **sem nenhuma reunião medida**, porque provavelmente são ausência. Esses dias aparecem na saída para você lançar à mão, se foram dias trabalhados.
-- O dia de hoje.
+**Dias incompletos são completados até 8,8h:**
+- Dia em que você já lançou algo à mão: só a diferença é lançada (o que você lançou fica como está).
+- Dia **sem reunião medida**: usa os temas das suas **conversas no Claude** daquele dia (só os títulos, lidos do histórico do Chrome; o conteúdo não é lido). Sem conversas que casem com uma iniciativa, usa a proporção da semana. Esses dias aparecem em "Confira estes dias" na saída.
+
+**O que nunca é lançado:** feriados e folgas de `dias_sem_expediente`, dias que já têm 8,8h lançadas e o dia de hoje.
 
 ## Iniciativas configuradas
 

@@ -65,6 +65,32 @@ def meet_visits(profile_dir):
     return visits
 
 
+CLAUDE_TITLE_RE = re.compile(r"\s*[-–|]\s*Claude\s*$")
+
+
+def claude_visits(profile_dir):
+    """Conversas abertas no claude.ai (chat e Claude Code): dia, título e minutos na aba.
+    Só o título sai do histórico; o conteúdo das conversas não é lido."""
+    tmp = os.path.join(tempfile.gettempdir(), "meet_tracker_history_claude")
+    shutil.copy2(os.path.join(profile_dir, "History"), tmp)
+    con = sqlite3.connect(tmp)
+    rows = con.execute(
+        """select v.visit_time, v.visit_duration, u.title
+           from visits v join urls u on u.id = v.url
+           where u.url like 'https://claude.ai/chat/%' or u.url like 'https://claude.ai/code/%'
+              or u.url like 'https://claude.ai/project/%'"""
+    ).fetchall()
+    con.close()
+    out = []
+    for vt, dur, title in rows:
+        title = CLAUDE_TITLE_RE.sub("", (title or "").strip())
+        if not title or title.lower() in ("claude", "new chat", "nova conversa"):
+            continue
+        out.append({"date": _chrome_ts(vt).strftime("%Y-%m-%d"), "title": title,
+                    "min": min((dur or 0) / 6e7, 240)})
+    return out
+
+
 def read_mic_usage():
     """Última sessão de microfone registrada pelo Windows para cada app (start, stop|None)."""
     out = {}

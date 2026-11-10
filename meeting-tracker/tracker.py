@@ -234,8 +234,13 @@ def sync_clockwork(data, cfg, mode):
     import clockwork
     if mode == "auto" and not os.path.exists(clockwork.CONFIG):
         return  # automação ainda não configurada
+    data = json.loads(json.dumps(data))
+    try:  # temas das conversas no Claude completam os dias sem reunião
+        data["claude"] = sources.claude_visits(sources.find_profile(cfg["email"]))
+    except Exception:
+        data["claude"] = []
     try:
-        clockwork.sync(json.loads(json.dumps(data)), cfg["email"], simulate=mode == "simular")
+        clockwork.sync(data, cfg["email"], simulate=mode == "simular")
     except Exception as e:
         msg = f"{datetime.now():%Y-%m-%d %H:%M} Clockwork: {e}"
         print(msg)
