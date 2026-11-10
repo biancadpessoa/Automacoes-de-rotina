@@ -2,12 +2,12 @@
 
 O que faz
   Toda segunda às 9h, junto com o relatório semanal, lança no Clockwork as horas da semana anterior:
-  8h por dia útil, divididas pelas iniciativas em que você trabalhou. Feriados/férias do config.json
+  8,8h por dia útil (igual ao "1d" do Jira), divididas pelas iniciativas em que você trabalhou. Feriados/férias do config.json
   ficam em branco. Dias em que você já lançou qualquer coisa à mão são pulados (nada é duplicado).
   Dias úteis sem NENHUMA reunião medida também são pulados (provável ausência) e aparecem
   listados na saída: lance à mão se foi dia trabalhado.
 
-Como as 8h de cada dia são divididas
+Como as 8,8h de cada dia são divididas
   1. Rotinas (dailies, weeklies, WBR, 1:1s, planning, treinamentos...) -> PLATSERV-5270 pelo tempo real.
   2. PLATSERV-4063 (Pesquisas com usuário) leva 30% do restante, toda semana (peso_fixo).
   3. O resto vai para as iniciativas na proporção das reuniões de cada tema NA SEMANA.

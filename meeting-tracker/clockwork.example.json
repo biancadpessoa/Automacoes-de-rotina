@@ -2,7 +2,7 @@
   "ativo": true,
   "site": "https://madeiramadeira.atlassian.net",
   "email": "",
-  "horas_dia": 8,
+  "horas_dia": 8.8,
   "fracao_minutos": 15,
   "minimo_minutos": 30,
   "pular_dias_sem_reuniao": true,

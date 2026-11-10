@@ -10,7 +10,7 @@ Nada precisa ser preenchido à mão. Os dados ficam no seu computador (`tracker.
 |---|---|---|
 | Microfone | A cada 1 min | Anota quando o Chrome usa o microfone, o que dá o horário real de fim de cada call. |
 | Dashboard e relatórios | Segundas, 9h | Atualiza o dashboard e salva o relatório semanal (e, no início do mês, o mensal) na pasta `Gestão do tempo - relatórios` do Drive. |
-| Clockwork | Segundas, 9h, junto com os relatórios | Lança no Jira 8h por dia útil da semana anterior, divididas por iniciativa. |
+| Clockwork | Segundas, 9h, junto com os relatórios | Lança no Jira 8,8h ("1d" do Jira) por dia útil da semana anterior, divididas por iniciativa. |
 
 Os números contam o tempo em que você **realmente esteve** na call, não o tempo marcado na agenda. Para isso, três fontes são cruzadas:
 
@@ -42,7 +42,7 @@ Os números contam o tempo em que você **realmente esteve** na call, não o tem
 
 ## Como o Clockwork divide cada dia
 
-Cada dia útil recebe 8h (`horas_dia`), divididas assim:
+Cada dia útil recebe 8,8h (`horas_dia`, igual ao "1d" do Jira), divididas assim:
 
 1. **Rotinas** (dailies, weeklies, WBR, planning, retro, 1:1s, treinamentos) vão para a iniciativa de rotinas pelo **tempo real** da reunião.
 2. **Iniciativas com `peso_fixo`** recebem essa fração do tempo restante toda semana, mesmo sem reunião. Hoje a PLATSERV-4063 tem 30%.

@@ -4,7 +4,7 @@
     python tracker.py clockwork --simular  -> só mostra o que seria lançado, sem gravar nada
     python tracker.py clockwork token      -> grava (ou troca) o token da API do Jira
 
-Regra de cada dia (horas_dia, padrão 8h):
+Regra de cada dia (horas_dia; 8.8 = "1d" do Jira):
   1. Reuniões de rotina (dailies, weeklies, 1:1s...) vão para a iniciativa de rotinas pelo tempo real.
   2. O restante do dia é dividido entre as iniciativas na proporção dos minutos de reunião
      de cada uma NA SEMANA (os temas da semana, não só os do dia: uma reunião de 30 min não
@@ -64,7 +64,11 @@ def _round(alloc, total, step):
     out = {k: int(v) for k, v in raw.items()}
     for k in sorted(raw, key=lambda k: raw[k] - out[k], reverse=True)[:units - sum(out.values())]:
         out[k] += 1
-    return {k: v * step for k, v in out.items() if v}
+    out = {k: v * step for k, v in out.items() if v}
+    # jornada que não é múltipla de step (8,8h = 528 min): a sobra vai para a maior fatia
+    if out and total - sum(out.values()):
+        out[max(out, key=out.get)] += total - sum(out.values())
+    return out
 
 
 def split_day(day_min, week_min, cw):
