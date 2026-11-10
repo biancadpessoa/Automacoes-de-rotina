@@ -38,7 +38,7 @@ KNOWN_CLOUDS = {"https://madeiramadeira.atlassian.net": "c52b487a-f294-4cb9-a67e
 
 def load_config():
     path = CONFIG if os.path.exists(CONFIG) else os.path.join(HERE, "clockwork.example.json")
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8-sig") as f:
         return json.load(f)
 
 
@@ -334,5 +334,5 @@ def sync(data, email, simulate=False):
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["token"]:
-        with open(os.path.join(HERE, "config.json"), encoding="utf-8") as f:
+        with open(os.path.join(HERE, "config.json"), encoding="utf-8-sig") as f:
             save_token(load_config().get("email") or json.load(f)["email"])

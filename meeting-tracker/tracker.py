@@ -21,7 +21,7 @@ CALL_APPS = ("chrome.exe",)
 
 
 def load_config():
-    with open(os.path.join(HERE, "config.json"), encoding="utf-8") as f:
+    with open(os.path.join(HERE, "config.json"), encoding="utf-8-sig") as f:
         return json.load(f)
 
 
