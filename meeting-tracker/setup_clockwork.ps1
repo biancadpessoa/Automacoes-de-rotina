@@ -62,10 +62,13 @@ if ($LASTEXITCODE -ne 0) { Write-Host "Falha ao instalar o keyring (proxy/rede?)
 # 2) Configuração das iniciativas
 $cwPath = Join-Path $dir "clockwork.json"
 if (Test-Path $cwPath) {
-    Write-Host "[2/4] clockwork.json já existe - mantido."
+    Write-Host "[2/4] clockwork.json encontrado (suas iniciativas e regras)."
 } else {
-    Copy-Item (Join-Path $dir "clockwork.example.json") $cwPath
-    Write-Host "[2/4] clockwork.json criado (iniciativas, rotinas e regras)."
+    # o modelo traz as iniciativas de outra pessoa: lançar com ele poria suas horas nas issues dela
+    Write-Host "Falta o seu clockwork.json (suas iniciativas no Jira)." -ForegroundColor Yellow
+    Write-Host "Gere com o Claude (Passo 2 do guia), salve nesta pasta como clockwork.json e rode este instalador de novo:"
+    Write-Host "  $dir"
+    Sair 1
 }
 
 # 3) Token da API do Jira

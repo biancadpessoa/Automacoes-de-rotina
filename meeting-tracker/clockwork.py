@@ -38,8 +38,9 @@ KNOWN_CLOUDS = {"https://madeiramadeira.atlassian.net": "c52b487a-f294-4cb9-a67e
 
 
 def load_config():
-    path = CONFIG if os.path.exists(CONFIG) else os.path.join(HERE, "clockwork.example.json")
-    with open(path, encoding="utf-8-sig") as f:
+    if not os.path.exists(CONFIG):  # nunca usar o modelo: ele traz as iniciativas de outra pessoa
+        raise RuntimeError("clockwork.json não encontrado: gere o seu com o Claude (Passo 2 do guia)")
+    with open(CONFIG, encoding="utf-8-sig") as f:
         return json.load(f)
 
 
